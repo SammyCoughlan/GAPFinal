@@ -52,7 +52,7 @@ const boardPMat = new CANNON.Material();
 
 const boardBody = new CANNON.Body({
     type: CANNON.Body.STATIC,
-    shape: new CANNON.Box(new CANNON.Vec3(3,5,.1)),
+    shape: new CANNON.Box(new CANNON.Vec3(3,5,.5)),
     material: boardPMat
 });
 boardBody.quaternion.setFromEuler(-Math.PI / -1.82,0,0);
@@ -133,10 +133,43 @@ world.addBody(BottomBody);
 
 //___________Paddles___________
 
+const lPaddle = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5,.5,.5),
+    new THREE.MeshStandardMaterial({color: 0x00FF00})
+);
+scene.add(lPaddle);
+
+const PaddleMat = new CANNON.Material();  
+
+const lPaddleBody = new CANNON.Body({
+    type: CANNON.Body.STATIC,
+    shape: new CANNON.Box(new CANNON.Vec3(.75,.25,.25)),
+    material: PaddleMat,
+    position: new CANNON.Vec3(-.8,-.002,3)
+});
+lPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,.3);
+world.addBody(lPaddleBody);
+
+const rPaddle = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5,.5,.5),
+    new THREE.MeshStandardMaterial({color: 0x00FF00})
+);
+scene.add(rPaddle);
+
+const rPaddleBody = new CANNON.Body({
+    type: CANNON.Body.STATIC,
+    shape: new CANNON.Box(new CANNON.Vec3(.75,.25,.25)),
+    material: PaddleMat,
+    position: new CANNON.Vec3(.8,-.002,3)
+});
+rPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,-.3);
+world.addBody(rPaddleBody);
+
+
 //___________Ball______________
 
 const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(.5),
+    new THREE.SphereGeometry(.25),
     new THREE.MeshStandardMaterial({color: 0xFFFF00})
 );
 scene.add(ball);
@@ -144,8 +177,8 @@ scene.add(ball);
 const ballPMat = new CANNON.Material();
 
 const ballBody = new CANNON.Body({
-    shape: new CANNON.Sphere(new CANNON.Vec3(.25,0,0)),
-    type: CANNON.Body.STATIC,
+    shape: new CANNON.Sphere(.125),
+    mass: .1,
     position: new CANNON.Vec3(0,6,0),
     material: ballPMat
 });
@@ -161,13 +194,53 @@ window.addEventListener('resize', () => {
 const boardBallContact = new CANNON.ContactMaterial(
     boardPMat,
     ballPMat,
-    {restitution: 0.3}
+    {friction: 0.1}
 );
+world.addContactMaterial(boardBallContact);
+
+var paddleBallContact = new CANNON.ContactMaterial(
+    ballPMat,
+    PaddleMat,
+    {restitution: 1 }
+);
+world.addContactMaterial(paddleBallContact);
+
+//__________Events___________
+window.addEventListener('keydown', function(e){
+    if(e.code === 'ArrowLeft')
+    {
+        lPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,-.3);
+    }
+    if(e.code === 'ArrowRight')
+    {
+        rPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,.3);
+    }
+});
+window.addEventListener('keyup', function(e){
+    if(e.code === 'ArrowLeft'){
+        lPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,.3);
+    }
+    if(e.code === 'ArrowRight')
+    {
+        rPaddleBody.quaternion.setFromEuler(Math.PI/1.82,0,-.3);
+    }
+});
+
+const timestep = 1/60;
 
 function animate()
 {
+    world.step(timestep);
+
     board.position.copy(boardBody.position);
     board.quaternion.copy(boardBody.quaternion);
+
+    lPaddle.position.copy(lPaddleBody.position);
+    lPaddle.quaternion.copy(lPaddleBody.quaternion);
+
+    rPaddle.position.copy(rPaddleBody.position);
+    rPaddle.quaternion.copy(rPaddleBody.quaternion);
+
     leftSide.position.copy(LeftBody.position);
     leftSide.quaternion.copy(LeftBody.quaternion);
     rightSide.position.copy(RightBody.position);
